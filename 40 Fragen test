@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studienwahl-Test</title>
+    <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=EUR"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            width: 90%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .frage {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        input[type='range'] {
+            width: 100%;
+            margin-top: 5px;
+        }
+        button {
+            background-color: #FF0000;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #CC0000;
+        }
+        h2 {
+            color: #FF0000;
+        }
+        #paypal-button-container {
+            margin-top: 20px;
+        }
+        canvas {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Studienwahl-Test</h2>
+        <form id="testForm">
+            <label for="email">E-Mail-Adresse:</label>
+            <input type="email" id="email" name="email" required>
+            <br><br>
+            <script>
+                const fragen = Array.from({ length: 40 }, (_, i) => `Frage ${i + 1}: Beschreibung der Frage ${i + 1}`);
+                document.write(fragen.map((frage, index) => `
+                    <div class='frage'>
+                        <label>${frage}</label><br>
+                        <input type='range' min='1' max='10' value='5' class='slider' name='q${index + 1}'>
+                    </div>
+                `).join(""));
+            </script>
+            <button type="button" onclick="auswerten()">Test auswerten</button>
+        </form>
+        
+        <div id="paypal-button-container"></div>
+        <h3>Ergebnis:</h3>
+        <canvas id="ergebnisChart"></canvas>
+    </div>
+    
+    <script>
+        function auswerten() {
+            let form = document.getElementById('testForm');
+            let daten = new FormData(form);
+            let kategorien = {
+                "Naturwissenschaften": [1, 9, 17, 25, 33],
+                "Soziale Berufe": [2, 8, 16, 24, 32],
+                "Technik & Ingenieurwesen": [3, 11, 19, 27, 35],
+                "Wirtschaft & Management": [4, 12, 20, 28, 36],
+                "Kunst & Design": [5, 13, 21, 29, 37],
+                "Sprachwissenschaften": [6, 14, 22, 30, 38],
+                "Rechtswissenschaften": [7, 15, 23, 31, 39],
+                "Medien & Kommunikation": [10, 18, 26, 34, 40]
+            };
+            let ergebnisse = {};
+            
+            for (let kategorie in kategorien) {
+                ergebnisse[kategorie] = 0;
+                kategorien[kategorie].forEach(num => {
+                    let value = daten.get("q" + num);
+                    if (value) {
+                        ergebnisse[kategorie] += parseInt(value);
+                    }
+                });
+            }
+            
+            let labels = Object.keys(ergebnisse);
+            let werte = Object.values(ergebnisse);
+            
+            let ctx = document.getElementById('ergebnisChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Übereinstimmung in %',
+                        data: werte,
+                        backgroundColor: '#FF0000',
+                        borderColor: '#CC0000',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 50
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
