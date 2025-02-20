@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studienwahl-Test</title>
+    <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=EUR"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .frage {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        input[type='range'] {
+            width: 100%;
+        }
+        button {
+            background-color: #FF0000;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #CC0000;
+        }
+        h2 {
+            color: #FF0000;
+        }
+        #paypal-button-container {
+            margin-top: 20px;
+        }
+        #ergebnis {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Studienwahl-Test</h2>
+        <form id="testForm">
+            <label for="email">E-Mail-Adresse:</label>
+            <input type="email" id="email" name="email" required>
+            <br><br>
+            <script>
+                const fragen = [
+                    "Ich beschäftige mich gerne mit wissenschaftlichen Themen.",
+                    "Ich kann mir vorstellen, in einem sozialen Beruf zu arbeiten.",
+                    "Ich interessiere mich für Technik und Innovationen.",
+                    "Ich lese gerne über wirtschaftliche Zusammenhänge.",
+                    "Ich bin kreativ und gestalte gerne Dinge.",
+                    "Ich finde es spannend, neue Sprachen zu lernen.",
+                    "Mich interessieren rechtliche und politische Themen.",
+                    "Ich beschäftige mich gerne mit der menschlichen Psyche.",
+                    "Naturwissenschaftliche Experimente finde ich spannend.",
+                    "Ich interessiere mich für digitale Medien und Kommunikation."
+                ];
+                document.write(fragen.map((frage, index) => `
+                    <div class='frage'>
+                        <label>${index + 1}. ${frage}</label><br>
+                        <input type='range' min='1' max='10' value='5' class='slider' name='q${index + 1}'>
+                    </div>
+                `).join(""));
+            </script>
+            <button type="button" onclick="auswerten()">Test auswerten</button>
+        </form>
+        
+        <div id="paypal-button-container"></div>
+        <h3>Ergebnis:</h3>
+        <p id="ergebnis"></p>
+    </div>
+    
+    <script>
+        let ergebnisText = "";
+        
+        function auswerten() {
+            let form = document.getElementById('testForm');
+            let daten = new FormData(form);
+            let email = daten.get("email");
+            let kategorien = {
+                "Naturwissenschaften": [1, 9],
+                "Soziale Berufe": [2, 8],
+                "Technik & Ingenieurwesen": [3],
+                "Wirtschaft & Management": [4],
+                "Kunst & Design": [5],
+                "Sprachwissenschaften": [6],
+                "Rechtswissenschaften": [7],
+                "Medien & Kommunikation": [10]
+            };
+            let ergebnisse = {};
+            let maxPunkte = 10 * Object.keys(kategorien).length;
+            
+            for (let kategorie in kategorien) {
+                ergebnisse[kategorie] = 0;
+                kategorien[kategorie].forEach(num => {
+                    let value = daten.get("q" + num);
+                    if (value) {
+                        ergebnisse[kategorie] += parseInt(value);
+                    }
+                });
+            }
+            
+            ergebnisText = "Empfohlene Studiengänge:\n";
+            for (let kategorie in ergebnisse) {
+                let prozent = ((ergebnisse[kategorie] / maxPunkte) * 100).toFixed(2);
+                ergebnisText += `${kategorie}: ${prozent}% Übereinstimmung\n`;
+            }
+        }
+        
+        function sendeRechnung(email, name) {
+            let nachricht = `Hallo ${name},\n\nVielen Dank für Ihre Zahlung.\nHier ist Ihre Rechnung:\n\nBetrag: 9,99 EUR\nLeistung: Studiengangsberatung\n\nMit freundlichen Grüßen,\nIhr Beratungsteam`;
+            alert(`Rechnung an ${email} gesendet:\n\n${nachricht}`);
+        }
+        
+        paypal.Buttons({
+            createOrder: function(data, actions) {
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value: '9.99'  
+                        }
+                    }]
+                });
+            },
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    let email = document.getElementById('email').value;
+                    document.getElementById('ergebnis').innerText = ergebnisText;
+                    document.getElementById('ergebnis').style.display = 'block';
+                    alert('Zahlung erfolgreich! Danke, ' + details.payer.name.given_name);
+                    sendeRechnung(email, details.payer.name.given_name);
+                });
+            }
+        }).render('#paypal-button-container');
+    </script>
+</body>
+</html>
